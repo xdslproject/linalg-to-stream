@@ -10,7 +10,8 @@ from xdsl.pattern_rewriter import (
     op_type_rewrite_pattern,
 )
 from xdsl.dialects.builtin import (
-    IntegerType
+    IntegerType,
+    IntAttr
 )
 
 from util.kernel_type import KernelType
@@ -123,10 +124,14 @@ class LinalgToStreamTranslator(RewritePattern):
         zigzag_description["padding"][str(generic_op.indexing_maps.data[0].data.results[1]).upper()] = (0,0)
         workload= dict()
         workload[0] = zigzag_description
-        print(f"workload = {workload}")
-        print("")
+        # print(f"workload = {workload}")
+        # print("")
 
-        pass
+        with open("workload.py", "w") as f:
+            f.write(f"workload = {workload}")
+
+
+        generic_op.attributes["zigzag_stream_id"] = IntAttr(0)
 
 
 class LinalgToStream(ModulePass):
