@@ -1,0 +1,1 @@
+xdsl @ git+https://github.com/xdslproject/xdsl.git@df1c825772361f9cdcaa464649829fedad65b5b0
