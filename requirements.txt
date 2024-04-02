@@ -1,1 +1,2 @@
 xdsl @ git+https://github.com/xdslproject/xdsl.git@df1c825772361f9cdcaa464649829fedad65b5b0
+stream-dse @ git+https://github.com/kuleuven-micas/stream.git@e2f91a9ba96caee8723631df6f5d04f42646bf7e
