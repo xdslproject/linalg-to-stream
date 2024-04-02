@@ -1,4 +1,4 @@
-from xdsl.dialects import builtin
+from xdsl.dialects import builtin, memref
 from xdsl.dialects.linalg import Generic
 from xdsl.ir import MLContext
 from xdsl.ir.affine import AffineDimExpr, AffineMap
@@ -8,6 +8,9 @@ from xdsl.pattern_rewriter import (
     PatternRewriteWalker,
     RewritePattern,
     op_type_rewrite_pattern,
+)
+from xdsl.dialects.builtin import (
+    IntegerType
 )
 
 from util.kernel_type import KernelType
@@ -83,6 +86,26 @@ class LinalgToStreamTranslator(RewritePattern):
 
         for i, bound in enumerate(iteration_bounds):
             zigzag_description["loop_dim_size"][f"d{i}"] = bound
+
+    
+      
+        widths = []
+        for op in generic_op.operands :
+            assert isinstance(op.type, memref.MemRefType)           
+            element_type = op.type.get_element_type()
+            if(isinstance(element_type, IntegerType)):
+                widths.append(element_type.width.data)
+            else:
+                widths.append(element_type.get_bitwidth)
+        
+        zigzag_description["operand_precision"] = dict()
+        zigzag_description["operand_precision"]["O"] = widths[-1]
+        zigzag_description["operand_precision"]["O_final"] = widths[-1]
+        zigzag_description["operand_precision"]["W"] = widths[0]
+        zigzag_description["operand_precision"]["I"] = widths[1]        
+       
+        print(zigzag_description)
+        print("")
 
         pass
 
