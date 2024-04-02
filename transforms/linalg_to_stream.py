@@ -121,7 +121,9 @@ class LinalgToStreamTranslator(RewritePattern):
         zigzag_description["padding"] = dict()
         zigzag_description["padding"][str(generic_op.indexing_maps.data[0].data.results[0]).upper()] = (0,0)
         zigzag_description["padding"][str(generic_op.indexing_maps.data[0].data.results[1]).upper()] = (0,0)
-        print(f"workload = {zigzag_description}")
+        workload= dict()
+        workload[0] = zigzag_description
+        print(f"workload = {workload}")
         print("")
 
         pass
