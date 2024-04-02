@@ -76,6 +76,14 @@ class LinalgToStreamTranslator(RewritePattern):
         combined_affine_map = AffineMap(3, 0, results)
         inverse_map = combined_affine_map.inverse_permutation()
 
+        memref_shapes = [shape.data for op in generic_op.operands for shape in op.type.shape.data]
+        iteration_bounds = inverse_map.eval(memref_shapes, [])
+
+        zigzag_description["loop_dim_size"] = dict()
+
+        for i, bound in enumerate(iteration_bounds):
+            zigzag_description["loop_dim_size"][f"d{i}"] = bound
+
         pass
 
 
