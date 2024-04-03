@@ -21,14 +21,12 @@ class LinalgToStreamTranslator(RewritePattern):
     @op_type_rewrite_pattern
     def match_and_rewrite(self, generic_op: Generic, rewriter: PatternRewriter):
 
+        # extract the kernel type from the generic op
+        # as zigzag only works with MAC, MUL, ...
         kernel_type = KernelType.get_kernel(generic_op)
 
         if not kernel_type:
             return
-        
-        # if kernel_type != KernelType.MUL:
-        #     print(f"kernel type of {kernel_type} not yet supported")
-        #     return
 
         # zigzag -> 3 operands: 2 inputs, 1 output
         assert len(generic_op.outputs) == 1
@@ -72,10 +70,12 @@ class LinalgToStreamTranslator(RewritePattern):
                 "equation"
             ] = f"{output_access} += {input_i_access} * {input_w_access}"
 
-        # extract dimension_relations (for now, leave empty)
+        # extract dimension_relations
+        # for matmul, this is empty
         zigzag_description["dimension_relations"] = []
 
-        # extract loop bounds
+        # extract loop bounds by evaluating the inverse affine map
+        # with the memref shapes as input
         results = []
         results.extend(generic_op.indexing_maps.data[0].data.results)
         results.extend(generic_op.indexing_maps.data[1].data.results)
@@ -124,13 +124,11 @@ class LinalgToStreamTranslator(RewritePattern):
         zigzag_description["padding"][str(generic_op.indexing_maps.data[0].data.results[1]).upper()] = (0,0)
         workload= dict()
         workload[0] = zigzag_description
-        # print(f"workload = {workload}")
-        # print("")
 
         with open("workload.py", "w") as f:
             f.write(f"workload = {workload}")
 
-
+        # add stream id attribute to the generic op
         generic_op.attributes["zigzag_stream_id"] = IntAttr(0)
 
 
