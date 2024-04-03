@@ -127,9 +127,9 @@ def multiplier_array_dut():
     multiplier_energy = 0.04
     multiplier_area = 1
     dimensions = {
-        "D1": 8,
-        "D2": 8,
-        "D3": 8,
+        "PE_ARRAY_D1": 8,
+        "PE_ARRAY_D2": 8,
+        "PE_ARRAY_D3": 8,
     }  # {'D1': ('M', 8), 'D2': ('N', 8), 'D3': ('K', 4)}
 
     multiplier = Multiplier(
