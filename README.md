@@ -82,8 +82,7 @@ Tests To Make:
 ```
 python run_zigzag.py 
 ```
-^ partially broken right now
-## feed output of tool into stream
+## feed output of tool into stream (need to fix)
 
 ```
 python run_stream.py
