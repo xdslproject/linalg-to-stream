@@ -77,3 +77,12 @@ Tests To Make:
 - Pointwise Conv2D
 - Matrix-vector multi.
 - matrix-martix multiply
+
+
+
+## feed output of tool into stream
+
+```
+python run_stream.py
+```
+[Errors we're getting documented here](https://github.com/EmilySillars/stream-zigzag-input-output-linalg/tree/add-linalg-as-output-from-stream/linalg-input-output)

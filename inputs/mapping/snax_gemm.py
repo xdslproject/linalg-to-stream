@@ -14,8 +14,8 @@ mapping = {
         "core_allocation": 1,
         "memory_operand_links": {
             "O": "O",
-            "B": "I2",
-            "A": "I1",
+            "W": "I2",
+            "I": "I1",
         },
     },
 }
