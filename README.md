@@ -78,8 +78,11 @@ Tests To Make:
 - Matrix-vector multi.
 - matrix-martix multiply
 
-
-
+## feed output of tool into zigzag
+```
+python run_zigzag.py 
+```
+^ partially broken right now
 ## feed output of tool into stream
 
 ```
