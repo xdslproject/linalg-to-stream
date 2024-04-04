@@ -90,7 +90,7 @@ class LinalgToStreamTranslator(RewritePattern):
         zigzag_description["loop_dim_size"] = dict()
 
         for i, bound in enumerate(iteration_bounds):
-            zigzag_description["loop_dim_size"][f"d{i}"] = bound
+            zigzag_description["loop_dim_size"][f"D{i}"] = bound
 
         # extract operand precision
         widths = []
