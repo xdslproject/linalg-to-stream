@@ -2,21 +2,19 @@ import zigzag.api
 from zigzag.visualization.results.print_mapping import print_mapping
 
 # what we wish would work
-# mapping= "inputs.mapping.snax_gemm"
-# accelerator = "inputs.hardware.snax_gemm"
-# workload = "workload"
+mapping= "inputs.mapping.snax_gemm"
+accelerator = "inputs.hardware.snax_gemm"
+workload = "workload"
+
+# gemm example from gemm-example branch
+# mapping= "inputs.mapping.gemm"
+# accelerator = "inputs.hardware.Gemm"
+# workload = "inputs.workload.gemm_layer"
 
 # what might work, but workload comes from stream so maybe other problems?
 # mapping= "inputs.mapping.snax_gemm"
 # accelerator = "inputs.hardware.snax_gemm"
 # workload = "inputs.workload.testing_workload_for_1_core"
-
-# gemm example from gemm-example branch
-mapping= "inputs.mapping.gemm"
-accelerator = "inputs.hardware.Gemm"
-workload = "inputs.workload.gemm_layer"
-
-
 
 # energy, latency, cme = get_hardware_performance_zigzag(
 #     workload,

@@ -1,6 +1,6 @@
 mapping = {
     "default": {  # default
-        "spatial_mapping": {"PE_ARRAY_D1": ("d0", 8), "PE_ARRAY_D2": ("d1", 8), "PE_ARRAY_D3": ("d2", 8)},
+        "spatial_mapping": {"PE_ARRAY_D1": ("D0", 8), "PE_ARRAY_D2": ("D1", 8), "PE_ARRAY_D3": ("D2", 8)},
         "temporal_ordering": [
             # Innermost loop
             # ("K", 8),
