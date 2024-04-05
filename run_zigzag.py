@@ -16,3 +16,5 @@ answers = zigzag.api.get_hardware_performance_zigzag(workload, accelerator, mapp
 cme = answers[2][0][0]
 print(cme.temporal_mapping)
 print(cme.spatial_mapping)
+
+print_mapping(cme)
