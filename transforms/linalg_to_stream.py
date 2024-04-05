@@ -1,6 +1,5 @@
 import random
 import string
-
 from xdsl.dialects import builtin, memref
 from xdsl.dialects.linalg import Generic
 from xdsl.ir import MLContext
@@ -12,7 +11,7 @@ from xdsl.pattern_rewriter import (
     RewritePattern,
     op_type_rewrite_pattern,
 )
-from xdsl.dialects.builtin import IntegerType, IntAttr
+from xdsl.dialects.builtin import ShapedType, IntegerType, IntAttr
 
 from util.kernel_type import KernelType
 
@@ -27,13 +26,31 @@ class LinalgToStreamTranslator(RewritePattern):
         if not kernel_type:
             return
 
-        # zigzag -> 3 operands: 2 inputs, 1 output
+        # make some assertions correct outputs of the linalg generic
         assert len(generic_op.outputs) == 1
         generic_op.outputs[0]
+        # linalg should have one output, and it should be a shaped type
+        if len(generic_op.outputs) != 1:
+            return
+        if not isinstance(generic_op.outputs[0].type, ShapedType):
+            return
 
-        assert len(generic_op.inputs) == 2
-        generic_op.inputs[0]
-        generic_op.inputs[1]
+        # extract output op and relevant indexing maps
+        output_op = generic_op.outputs[0]
+        output_map = generic_op.indexing_maps.data[-1].data
+
+        # make some assertions on correct inputs of the linalg generic
+        shaped_inputs = [
+            (op, map.data)
+            for (op, map) in zip(generic_op.inputs, generic_op.indexing_maps.data[:-1])
+            if isinstance(op.type, ShapedType)
+        ]
+        if len(shaped_inputs) != 2:
+            return
+
+        # input a, input b, output
+        operands = [shaped_inputs[0][0], shaped_inputs[1][0], output_op]
+        indexing_maps = [shaped_inputs[0][1], shaped_inputs[1][1], output_map]
 
         zigzag_description = dict()
         dimension_relations = []
@@ -43,14 +60,14 @@ class LinalgToStreamTranslator(RewritePattern):
 
         # construct equation
         output_access = "O"
-        for i in range(len(generic_op.indexing_maps.data[0].data.results)):
-            map = generic_op.indexing_maps.data[-1].data.results[i]
+        for i in range(len(indexing_maps[-1].results)):
+            map = indexing_maps[-1].results[i]
             assert isinstance(map, AffineDimExpr)
             output_access += f"[{str(map)}]"
 
         input_i_access = "I"
-        for i in range(len(generic_op.indexing_maps.data[0].data.results)):
-            map = generic_op.indexing_maps.data[0].data.results[i]
+        for i in range(len(indexing_maps[0].results)):
+            map = indexing_maps[0].results[i]
             if isinstance(map, AffineBinaryOpExpr):
                 random_suffix = ''.join(
                     random.choice(string.ascii_letters) for _ in range(1)
@@ -67,8 +84,8 @@ class LinalgToStreamTranslator(RewritePattern):
                 input_i_access += f"[{str(map)}]"
 
         input_w_access = "W"
-        for i in range(len(generic_op.indexing_maps.data[1].data.results)):
-            map = generic_op.indexing_maps.data[1].data.results[i]
+        for i in range(len(indexing_maps[1].results)):
+            map = indexing_maps[1].results[i]
             assert isinstance(map, AffineDimExpr)
             input_w_access += f"[{str(map)}]"
 
@@ -92,7 +109,6 @@ class LinalgToStreamTranslator(RewritePattern):
 
         num_dims = max([dim.data.num_dims for dim in generic_op.indexing_maps.data])
 
-        # combined_affine_map = AffineMap(num_dims, 0, results)
         results = tuple(AffineExpr.dimension(i) for i in range(num_dims))
         combined_affine_map = AffineMap(num_dims, 0, results)
         inverse_map = combined_affine_map.inverse_permutation()
@@ -104,11 +120,11 @@ class LinalgToStreamTranslator(RewritePattern):
         zigzag_description["loop_dim_size"] = dict()
 
         for i, bound in enumerate(iteration_bounds):
-            zigzag_description["loop_dim_size"][f"d{i}"] = bound
+            zigzag_description["loop_dim_size"][f"D{i}"] = bound
 
         # extract operand precision
         widths = []
-        for op in generic_op.operands:
+        for op in operands:
             assert isinstance(op.type, memref.MemRefType)
             element_type = op.type.get_element_type()
             if isinstance(element_type, IntegerType):
