@@ -26,9 +26,6 @@ class LinalgToStreamTranslator(RewritePattern):
         if not kernel_type:
             return
 
-        # make some assertions correct outputs of the linalg generic
-        assert len(generic_op.outputs) == 1
-        generic_op.outputs[0]
         # linalg should have one output, and it should be a shaped type
         if len(generic_op.outputs) != 1:
             return
