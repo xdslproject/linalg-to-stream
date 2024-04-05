@@ -105,7 +105,6 @@ class LinalgToStreamTranslator(RewritePattern):
 
         # extract loop bounds by evaluating the inverse affine map
         # with the memref shapes as input
-        # results = []
 
         num_dims = max([dim.data.num_dims for dim in generic_op.indexing_maps.data])
 
