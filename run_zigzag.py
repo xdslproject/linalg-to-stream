@@ -14,7 +14,5 @@ workload = "workload"
 answers = zigzag.api.get_hardware_performance_zigzag(workload, accelerator, mapping, "latency", "outputs/my-output.json","outputs/list_of_cmes.pickle")
 
 cme = answers[2][0][0]
-print(cme.temporal_mapping)
-print(cme.spatial_mapping)
 
 print_mapping(cme)

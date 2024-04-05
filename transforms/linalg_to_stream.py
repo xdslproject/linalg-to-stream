@@ -144,6 +144,25 @@ class LinalgToStreamTranslator(RewritePattern):
         # add stream id attribute to the generic op
         generic_op.attributes["zigzag_stream_id"] = IntAttr(0)
 
+        # feed workload into zigzag and get zigzag output
+        import zigzag.api
+        from zigzag.visualization.results.print_mapping import print_mapping
+
+        # use example snax mapping and accelerator definition as defaults
+        mapping= "inputs.mapping.snax_gemm"
+        accelerator = "inputs.hardware.snax_gemm"
+        workload_path = "workload"
+
+        answers = zigzag.api.get_hardware_performance_zigzag(workload_path, accelerator, mapping, "latency", "outputs/my-output.json","outputs/list_of_cmes.pickle")
+        cme = answers[2][0][0]
+        print(cme.temporal_mapping)
+        print(cme.spatial_mapping)
+
+        print_mapping(cme)
+
+        # transform generic op based on zigzag recommendations!
+        
+
 
 class LinalgToStream(ModulePass):
     name = "linalg-to-stream"
