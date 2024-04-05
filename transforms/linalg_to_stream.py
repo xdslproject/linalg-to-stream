@@ -1,3 +1,6 @@
+import random
+import string
+
 from xdsl.dialects import builtin, memref
 from xdsl.dialects.linalg import Generic
 from xdsl.ir import MLContext
@@ -49,10 +52,16 @@ class LinalgToStreamTranslator(RewritePattern):
         for i in range(len(generic_op.indexing_maps.data[0].data.results)):
             map = generic_op.indexing_maps.data[0].data.results[i]
             if isinstance(map, AffineBinaryOpExpr):
-                dimension_relations.append(
-                    "ix=" + str(map.lhs) + str(map.kind.get_token()) + str(map.rhs)
+                random_suffix = ''.join(
+                    random.choice(string.ascii_letters) for _ in range(1)
                 )
-                input_i_access += f"[ix]"
+                dimension_relations.append(
+                    f"i{random_suffix}="
+                    + str(map.lhs)
+                    + str(map.kind.get_token())
+                    + str(map.rhs)
+                )
+                input_i_access += f"[i{random_suffix}]"
             else:
                 assert isinstance(map, AffineDimExpr)
                 input_i_access += f"[{str(map)}]"
@@ -72,7 +81,6 @@ class LinalgToStreamTranslator(RewritePattern):
             zigzag_description[
                 "equation"
             ] = f"{output_access} += {input_i_access} * {input_w_access}"
-        print(zigzag_description)
 
         # extract dimension_relations
         # for matmul, this is empty
@@ -83,25 +91,16 @@ class LinalgToStreamTranslator(RewritePattern):
         # results = []
 
         num_dims = max([dim.data.num_dims for dim in generic_op.indexing_maps.data])
-        print(num_dims)
-        # results.extend(generic_op.indexing_maps.data[0].data.results)
-        # results.extend(generic_op.indexing_maps.data[1].data.results)
-        # results.extend(generic_op.indexing_maps.data[2].data.results)
-        # results.extend(num_dims)
 
         # combined_affine_map = AffineMap(num_dims, 0, results)
-        combined_affine_map = AffineMap(
-            num_dims, 0, (AffineExpr.dimension(0), AffineExpr.dimension(1))
-        )
+        results = tuple(AffineExpr.dimension(i) for i in range(num_dims))
+        combined_affine_map = AffineMap(num_dims, 0, results)
         inverse_map = combined_affine_map.inverse_permutation()
-        print(combined_affine_map)
-        print(inverse_map)
 
         memref_shapes = [
             shape.data for op in generic_op.operands for shape in op.type.shape.data
         ]
         iteration_bounds = inverse_map.eval(memref_shapes[:num_dims], [])
-        print(iteration_bounds)
         zigzag_description["loop_dim_size"] = dict()
 
         for i, bound in enumerate(iteration_bounds):
@@ -132,7 +131,6 @@ class LinalgToStreamTranslator(RewritePattern):
         zigzag_description["constant_operands"] = dict()
         zigzag_description["constant_operands"] = ["I", "W"]
 
-        print(generic_op.indexing_maps.data[0].data.results[0])
         # padding (use default of 0 padding for now)
         # affects last two indices of input I
         zigzag_description["padding"] = dict()
