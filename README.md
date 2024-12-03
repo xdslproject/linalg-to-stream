@@ -1,19 +1,61 @@
-# linalg to Stream
+# Linalg to Stream
 
-Input: linalg dialect `.mlir` file
+## End-Goal Linalg-to-Stream Tool Responsibilities
 
-Output:
+1. take in as input MLIR with linalg operations
+2. for each linalg generic operation, 
+   1. generate an equivalent ZigZag workload object
+   2. feed this workload + a hardware description to zigzag
+   3. parse the ZigZag output, including converting the prescribed loop bounds into tile sizes
+   4. annotate the linalg operation with the ZigZag-prescribed tile size
 
-1) annotated linalg dialect (linalg generic operations that can be processed by stream are annotated with unique ids)
-2) a python dictionary saved to the filename `workload.py` valid as stream input
+3. output annotated MLIR, ***including an accompanying transform dialect script encoding the tiling transformation of each linalg operation***
 
-## set up
+![](/home/hoppip/linalg-to-stream/pics/linalg-to-stream-tool.png)
 
-Install Dependencies
+## Current Functionality
+
+Annotates a linalg matmul with a unique ID, and outputs corresponding ZigZag workload to a file.
+
+## Set up
+
+Install dependencies
 
 ```
 pip install -r requirements.txt
 ```
+
+## Running the tool
+
+#### Run an Example
+
+```
+sh run.sh tests/matmul.mlir inputs/hardware/snax_gemm.py inputs/mapping/snax_gemm.py ./myWorkload.yaml
+```
+
+To view zigzag workload, do
+
+```
+cat ./myWorkload.yaml
+```
+
+#### Run a Regression Test
+
+```
+sh run_test.sh matmul snax_gemm.py snax_gemm.py
+```
+
+To view zigzag workload, do
+
+```
+cat tests/workloads/matmul.workload.out.yaml
+```
+
+
+
+...
+
+## old documentation below - less relevant, but preserving here for reference
 
 ## running the tool
 
@@ -21,12 +63,12 @@ pip install -r requirements.txt
 python xdsl_opt_main.py tests/matmul.mlir -p linalg-to-stream
 ```
 
-## limitations
+### limitations
 
 - Currently tool can only take in a single linalg generic operation
 - The linalg generic operation must be a matrix multiply
 
-## future work
+### future work
 
 - handle multiple linalg generic operations, assigning a unique id to each, which is then added as as attribute to the mlir operation
 
@@ -78,11 +120,12 @@ Tests To Make:
 - Matrix-vector multi.
 - matrix-martix multiply
 
-## feed output of tool into zigzag
+### feed output of tool into zigzag
+
 ```
 python run_zigzag.py 
 ```
-## feed output of tool into stream (need to fix)
+### feed output of tool into stream (need to fix)
 
 ```
 python run_stream.py

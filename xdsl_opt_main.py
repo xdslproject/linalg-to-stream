@@ -30,7 +30,6 @@ class xDSLOptMainWrapper(xDSLOptMain):
         arg_parser = argparse.ArgumentParser(description=description)
         super().register_all_arguments(arg_parser)
         self.args = arg_parser.parse_args(args=args)
-
         self.ctx.allow_unregistered = self.args.allow_unregistered_dialect
 
         super().setup_pipeline()
