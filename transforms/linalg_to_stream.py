@@ -10,11 +10,24 @@ from xdsl.pattern_rewriter import (
     op_type_rewrite_pattern,
 )
 from xdsl.dialects.builtin import ShapedType, IntegerType, IntAttr
-
+from dataclasses import dataclass, field
 from util.kernel_type import KernelType
 
 
+
+# class Child(Parent):
+#     def __init__(self, c, d, *args, **kwargs):
+#         print 'c', c
+#         print 'd', d
+#         super(Child, self).__init__(*args, **kwargs)
+
+
 class LinalgToStreamTranslator(RewritePattern):
+    outputPath : str | None = "yodel"
+    def __init__(self, opath):
+        # print(f'CUPCAKE {opath}')
+        self.outputPath = opath
+        super(LinalgToStreamTranslator, self).__init__()
     @op_type_rewrite_pattern
     def match_and_rewrite(self, generic_op: Generic, rewriter: PatternRewriter):
 
@@ -138,17 +151,45 @@ class LinalgToStreamTranslator(RewritePattern):
         workload = dict()
         workload[0] = zigzag_description
 
-        with open("workload.py", "w") as f:
+        # print(f'outputPath is now {self.outputPath}')
+
+        with open(self.outputPath, "w") as f:
             f.write(f"workload = {workload}")
 
         # add stream id attribute to the generic op
         generic_op.attributes["zigzag_stream_id"] = IntAttr(0)
 
-
+@dataclass(frozen=True)
 class LinalgToStream(ModulePass):
     name = "linalg-to-stream"
+    # arguments: tuple[str, ...] = field(default=())
+    # tuple[int, ...] = (1, 2, 3)
+    # list_str: tuple[str, ...] = field(default=())
+    tester : int | None = 5
+    hardware : str | None = None
+    mapping : str | None = None
+    outputPath : str | None = None
+    arg_1: tuple[int, ...] = (1, 2, 3)
+    
 
     def apply(self, ctx: MLContext, module: builtin.ModuleOp) -> None:
-        PatternRewriteWalker(
-            LinalgToStreamTranslator(), apply_recursively=False
+        # print(f'outputpath is {self.outputPath}')
+
+        if self.hardware is None:
+            raise ValueError(
+                "hardware cannot be None!"
+            )
+        if self.mapping is None:
+            raise ValueError(
+                "mapping cannot be None!"
+            )
+        if self.tester == 4:
+            raise ValueError(
+                "tester is 4"
+            )
+
+        else:
+         #print(f"tester is {self.tester} and hardware is {self.hardware}, mapping is {self.mapping}, outputPath is {self.outputPath}")
+         PatternRewriteWalker(
+            LinalgToStreamTranslator(self.outputPath), apply_recursively=False
         ).rewrite_module(module)
