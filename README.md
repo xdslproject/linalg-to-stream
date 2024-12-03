@@ -11,7 +11,7 @@
 
 3. output annotated MLIR, ***including an accompanying transform dialect script encoding the tiling transformation of each linalg operation***
 
-![](/home/hoppip/linalg-to-stream/pics/linalg-to-stream-tool.png)
+![](pics/linalg-to-stream-tool.png)
 
 ## Current Functionality
 
