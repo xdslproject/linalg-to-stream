@@ -28,6 +28,8 @@ class LinalgToStreamTranslator(RewritePattern):
         # print(f'CUPCAKE {opath}')
         self.outputPath = opath
         super(LinalgToStreamTranslator, self).__init__()
+    def emitWorkload(self, generic_op: Generic, unique_id : int):
+        return
     @op_type_rewrite_pattern
     def match_and_rewrite(self, generic_op: Generic, rewriter: PatternRewriter):
 
@@ -173,7 +175,6 @@ class LinalgToStream(ModulePass):
     
 
     def apply(self, ctx: MLContext, module: builtin.ModuleOp) -> None:
-        # print(f'outputpath is {self.outputPath}')
 
         if self.hardware is None:
             raise ValueError(
@@ -183,13 +184,8 @@ class LinalgToStream(ModulePass):
             raise ValueError(
                 "mapping cannot be None!"
             )
-        if self.tester == 4:
-            raise ValueError(
-                "tester is 4"
-            )
 
-        else:
          #print(f"tester is {self.tester} and hardware is {self.hardware}, mapping is {self.mapping}, outputPath is {self.outputPath}")
-         PatternRewriteWalker(
+        PatternRewriteWalker(
             LinalgToStreamTranslator(self.outputPath), apply_recursively=False
         ).rewrite_module(module)

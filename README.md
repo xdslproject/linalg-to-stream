@@ -17,6 +17,62 @@
 
 Annotates a linalg matmul with a unique ID, and outputs corresponding ZigZag workload to a file.
 
+Subtasks to expand functionality:
+
+- generate workload as yaml file
+- use Jonas's code to feed to zigzag and extract?
+- use Jonas's code to create transform dialect script?
+- how to make this a through-line that is easily extendable?
+
+```
+sh run.sh tests/matmul.mlir inputs/hardware/snax_gemm.py inputs/mapping/snax_gemm.py tests/out/myWorkload.yaml
+```
+
+What does the yaml file that I want to generate look like?
+
+### Emily notes
+
+https://github.com/EmilySillars/Quidditch-zigzag/blob/tiling/runtime/tests/tiledMatmul12/README.md
+
+```
+- id: 0 
+  name: matmul_104_104  # name can be used to specify mapping
+  operator_type: MatMul  # operator_type can be used to specify mapping
+  equation: O[a][b]+=I[a][c]*W[c][b]
+  dimension_relations: []
+  loop_dims: [A,B,C]
+  loop_sizes: [104, 104, 104]
+  operand_precision:
+    W: 8
+    I: 8
+    O: 32
+    O_final: 32
+  operand_source:
+    I: 0
+    W: 0
+```
+
+
+
+```
+- id: 30 # fc
+  operator_type: Conv
+  equation: O[b][k][oy][ox]+=W[k][c][fy][fx]*I[b][c][iy][ix]
+  dimension_relations: [ix=1*ox+1*fx, iy=1*oy+1*fy]
+  loop_dims: [B, K, C, OY, OX, FY, FX]
+  loop_sizes: [1, 1000, 512, 1, 1, 1, 1]
+  operand_precision:
+    W: 8
+    I: 8
+    O: 16
+    O_final: 8
+  operand_source:
+    I: 29
+    W: 30
+```
+
+
+
 ## Set up
 
 Install dependencies
