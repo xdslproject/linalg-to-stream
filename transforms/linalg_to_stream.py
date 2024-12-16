@@ -1,7 +1,9 @@
+import random
+import string
 from xdsl.dialects import builtin, memref
 from xdsl.dialects.linalg import Generic
 from xdsl.ir import MLContext
-from xdsl.ir.affine import AffineDimExpr, AffineMap
+from xdsl.ir.affine import AffineBinaryOpExpr, AffineDimExpr, AffineMap, AffineExpr
 from xdsl.passes import ModulePass
 from xdsl.pattern_rewriter import (
     PatternRewriter,
@@ -30,7 +32,6 @@ class LinalgToStreamTranslator(RewritePattern):
         super(LinalgToStreamTranslator, self).__init__()
     @op_type_rewrite_pattern
     def match_and_rewrite(self, generic_op: Generic, rewriter: PatternRewriter):
-
         # extract the kernel type from the generic op
         # as zigzag only works with MAC, MUL, ...
         kernel_type = KernelType.get_kernel(generic_op)
@@ -38,7 +39,6 @@ class LinalgToStreamTranslator(RewritePattern):
         if not kernel_type:
             return
 
-        # make some assertions correct outputs of the linalg generic
         # linalg should have one output, and it should be a shaped type
         if len(generic_op.outputs) != 1:
             return
@@ -63,6 +63,7 @@ class LinalgToStreamTranslator(RewritePattern):
         indexing_maps = [shaped_inputs[0][1], shaped_inputs[1][1], output_map]
 
         zigzag_description = dict()
+        dimension_relations = []
 
         # for now, set operator to default type
         zigzag_description["operator_type"] = "default"
@@ -77,8 +78,20 @@ class LinalgToStreamTranslator(RewritePattern):
         input_i_access = "I"
         for i in range(len(indexing_maps[0].results)):
             map = indexing_maps[0].results[i]
-            assert isinstance(map, AffineDimExpr)
-            input_i_access += f"[{str(map)}]"
+            if isinstance(map, AffineBinaryOpExpr):
+                random_suffix = ''.join(
+                    random.choice(string.ascii_letters) for _ in range(1)
+                )
+                dimension_relations.append(
+                    f"i{random_suffix}="
+                    + str(map.lhs)
+                    + str(map.kind.get_token())
+                    + str(map.rhs)
+                )
+                input_i_access += f"[i{random_suffix}]"
+            else:
+                assert isinstance(map, AffineDimExpr)
+                input_i_access += f"[{str(map)}]"
 
         input_w_access = "W"
         for i in range(len(indexing_maps[1].results)):
@@ -87,32 +100,32 @@ class LinalgToStreamTranslator(RewritePattern):
             input_w_access += f"[{str(map)}]"
 
         if kernel_type == KernelType.MUL:
-            zigzag_description["equation"] = (
-                f"{output_access} = {input_i_access} * {input_w_access}"
-            )
+            zigzag_description[
+                "equation"
+            ] = f"{output_access} = {input_i_access} * {input_w_access}"
 
         elif kernel_type in (KernelType.MAC, KernelType.QMAC):
-            zigzag_description["equation"] = (
-                f"{output_access} += {input_i_access} * {input_w_access}"
-            )
+            zigzag_description[
+                "equation"
+            ] = f"{output_access} += {input_i_access} * {input_w_access}"
 
         # extract dimension_relations
         # for matmul, this is empty
-        zigzag_description["dimension_relations"] = []
+        zigzag_description["dimension_relations"] = dimension_relations
 
         # extract loop bounds by evaluating the inverse affine map
         # with the memref shapes as input
-        results = []
-        results.extend(indexing_maps[0].results)
-        results.extend(indexing_maps[1].results)
-        results.extend(indexing_maps[2].results)
 
-        combined_affine_map = AffineMap(3, 0, results)
+        num_dims = max([dim.data.num_dims for dim in generic_op.indexing_maps.data])
+
+        results = tuple(AffineExpr.dimension(i) for i in range(num_dims))
+        combined_affine_map = AffineMap(num_dims, 0, results)
         inverse_map = combined_affine_map.inverse_permutation()
 
-        memref_shapes = [shape.data for op in operands for shape in op.type.shape.data]
-        iteration_bounds = inverse_map.eval(memref_shapes, [])
-
+        memref_shapes = [
+            shape.data for op in generic_op.operands for shape in op.type.shape.data
+        ]
+        iteration_bounds = inverse_map.eval(memref_shapes[:num_dims], [])
         zigzag_description["loop_dim_size"] = dict()
 
         for i, bound in enumerate(iteration_bounds):
@@ -146,8 +159,6 @@ class LinalgToStreamTranslator(RewritePattern):
         # padding (use default of 0 padding for now)
         # affects last two indices of input I
         zigzag_description["padding"] = dict()
-        zigzag_description["padding"][str(indexing_maps[0].results[0]).upper()] = (0, 0)
-        zigzag_description["padding"][str(indexing_maps[0].results[1]).upper()] = (0, 0)
         workload = dict()
         workload[0] = zigzag_description
 
